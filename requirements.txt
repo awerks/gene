@@ -1,6 +1,7 @@
 flask
 plotly
-dash-bio
+dash
 pandas
 openpyxl
 numpy
+requests

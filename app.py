@@ -47,7 +47,7 @@ def index():
 )
 def update_boxplot(clickData):
     if clickData is None:
-        return px.box(title="Click a point on the volcano plot to see details.")
+        return px.box(title="Click a point on the volcano plot to see details."), ""
 
     gene = clickData["points"][0]["customdata"][0]
 
