@@ -4,11 +4,10 @@ from dash.dependencies import Input, Output
 import pandas as pd
 import numpy as np
 import plotly.express as px
+from flask import Flask, render_template
 
 volcano_df = pd.read_excel("assets/gene_data.xlsx", sheet_name="S4B limma results", header=2)
 volcano_df["neg_log10_adjP"] = -np.log10(volcano_df["adj.P.Val"] + 1e-10)
-
-app = dash.Dash(__name__)
 
 volcano_fig = px.scatter(
     volcano_df,
@@ -20,12 +19,19 @@ volcano_fig = px.scatter(
     labels={"logFC": "Log Fold Change", "neg_log10_adjP": "-log10(adj.P.Val)"},
 )
 
-app = dash.Dash(__name__)
+server = Flask(__name__)
 
-app.layout = html.Div([dcc.Graph(id="volcano-plot", figure=volcano_fig)])
+dash_app = dash.Dash(__name__, server=server, url_base_pathname="/dash/")
+dash_app.layout = html.Div([dcc.Graph(id="volcano-plot", figure=volcano_fig), dcc.Graph(id="boxplot")])
 
 
-@app.callback(Output("boxplot", "figure"), [Input("volcano-plot", "clickData")])
+@server.route("/")
+def index():
+    return render_template("index.html")
+
+
+# output - changes figure of boxpot, input - volcano plot click data from a click event
+@dash_app.callback(Output("boxplot", "figure"), [Input("volcano-plot", "clickData")])
 def update_boxplot(clickData):
     if clickData is None:
         return px.box(title="Click a point on the volcano plot to see details.")
@@ -37,8 +43,10 @@ def update_boxplot(clickData):
     if gene_data.empty:
         return px.box(title=f"No data for gene {gene}")
 
+    # columns of donors
     donor_columns = [column for column in gene_data.columns if "OD" in column or "YD" in column]
 
+    # need to melt the dataframe to long format for boxplot
     donor_data_long = gene_data[donor_columns].melt(var_name="Sample", value_name="Protein Concentration")
 
     donor_data_long["Age Group"] = donor_data_long["Sample"].apply(determine_age_group)
@@ -63,4 +71,4 @@ def determine_age_group(sample):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    server.run(debug=True)
