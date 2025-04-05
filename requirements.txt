@@ -3,3 +3,4 @@ plotly
 dash-bio
 pandas
 openpyxl
+numpy

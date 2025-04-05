@@ -1,29 +1,28 @@
-from flask import Flask, render_template
+import dash
+from dash import dcc, html
+from dash.dependencies import Input, Output
 import pandas as pd
-import dash_bio
+import numpy as np
+import plotly.express as px
 
-app = Flask(__name__)
+volcano_df = pd.read_excel("assets/gene_data.xlsx", sheet_name="S4B limma results", header=2)
+volcano_df["neg_log10_adjP"] = -np.log10(volcano_df["adj.P.Val"] + 1e-10)
 
+app = dash.Dash(__name__)
 
-@app.route("/")
-def index():
-    return volcano_plot().to_html()
+volcano_fig = px.scatter(
+    volcano_df,
+    x="logFC",
+    y="neg_log10_adjP",
+    hover_data=["EntrezGeneSymbol", "TargetFullName"],
+    custom_data=["EntrezGeneSymbol"],
+    title="Interactive Volcano Plot of Protein Activity Differences",
+    labels={"logFC": "Log Fold Change", "neg_log10_adjP": "-log10(adj.P.Val)"},
+)
 
+app = dash.Dash(__name__)
 
-def volcano_plot():
-    df = pd.read_excel("assets/gene_data.xlsx", sheet_name="S4B limma results", header=2)
-
-    # https://plotly.com/python/volcano-plot/
-
-    return dash_bio.VolcanoPlot(
-        dataframe=df,
-        snp="id",
-        effect_size="logFC",
-        p="adj.P.Val",
-        gene="EntrezGeneSymbol",
-        logp=True,
-        title="Volcano Plot",
-    )
+app.layout = html.Div([dcc.Graph(id="volcano-plot", figure=volcano_fig)])
 
 
 if __name__ == "__main__":
